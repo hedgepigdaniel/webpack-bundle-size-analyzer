@@ -12,7 +12,7 @@ describe('printDependencySizeTree()', () => {
 
 		const statsJsonStr = fs.readFileSync('tests/stats.json').toString();
 		const statsJson = <webpack_stats.WebpackJsonOutput>JSON.parse(statsJsonStr);
-		const depsTree = size_tree.dependencySizeTree(statsJson);
+		const depsTree = size_tree.dependencySizeTree(statsJson, "node_modules");
 		size_tree.printDependencySizeTree(depsTree, 0, line => output += '\n' + line);
 
 		expect(output).to.equal(
@@ -44,7 +44,7 @@ describe('dependencySizeTree()', () => {
 				name: './foo.js'
 			}]
 		};
-		const depsTree = size_tree.dependencySizeTree(webpackOutput);
+		const depsTree = size_tree.dependencySizeTree(webpackOutput, "node_modules");
 		expect(depsTree).to.deep.equal({
 			packageName: '<root>',
 			size: 1234,
