@@ -7,7 +7,7 @@ import size_tree = require('./size_tree');
 import webpack_stats = require('./webpack_stats');
 
 commander.version('0.1.0')
-         .usage('[options] <Webpack JSON output>')
+         .usage('[options] <Webpack JSON output> [module paths ...]')
          .description(
  `Analyzes the JSON output from 'webpack --json'
   and displays the total size of JS modules
@@ -21,8 +21,26 @@ if (!commander.args[0]) {
 	process.exit(1);
 }
 
+const multiplePaths = commander.args.length > 1;
+
+let paths: string[];
+if (multiplePaths) {
+	paths = commander.args.slice(1);
+} else {
+	paths = ["node_modules"];
+}
+
 const bundleStatsJson = fs.readFileSync(commander.args[0]).toString();
 const bundleStats = <webpack_stats.WebpackJsonOutput>JSON.parse(bundleStatsJson);
-const depTree = size_tree.dependencySizeTree(bundleStats);
-size_tree.printDependencySizeTree(depTree);
+
+paths.forEach(function(path) {
+	if (multiplePaths) {
+		console.log("Dependencies in " + path + ":");
+	}
+	let depTree = size_tree.dependencySizeTree(bundleStats, path);
+	size_tree.printDependencySizeTree(depTree);
+	if (multiplePaths) {
+		console.log("\n");
+	}
+});
 

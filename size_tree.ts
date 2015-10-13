@@ -4,6 +4,11 @@ import filesize = require('filesize');
 
 import webpack_stats = require('./webpack_stats');
 
+function escapeRegExp(string: string) {
+	return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+
 function modulePath(identifier: string) {
 	// the format of module paths is
 	//   '(<loader expression>!)?/path/to/module.js'
@@ -63,7 +68,7 @@ export function printDependencySizeTree(node: StatsNode, depth: number = 0,
 /** Takes the output of 'webpack --json', groups the require()'d modules
   * by their associated NPM package and outputs a tree of package dependencies.
   */
-export function dependencySizeTree(stats: webpack_stats.WebpackJsonOutput) {
+export function dependencySizeTree(stats: webpack_stats.WebpackJsonOutput, module_path: string) {
 	let statsTree: StatsNode = {
 		packageName: '<root>',
 		size: 0,
@@ -92,7 +97,7 @@ export function dependencySizeTree(stats: webpack_stats.WebpackJsonOutput) {
 		// root/node_modules/parent/node_modules/child/file/path.js =>
 		//  ['root', 'parent', 'child', 'file/path.js'
 
-		let packages = mod.path.split(/\/node_modules\//);
+		let packages = mod.path.split(new RegExp("\/" + escapeRegExp(module_path) + "\/"));
 		let filename = '';
 		if (packages.length > 1) {
 			let lastSegment = packages.pop();
@@ -106,14 +111,14 @@ export function dependencySizeTree(stats: webpack_stats.WebpackJsonOutput) {
 
 		let parent = statsTree;
 		parent.size += mod.size;
-		packages.forEach(package => {
-			let existing = parent.children.filter(child => child.packageName === package);
+		packages.forEach(packageName => {
+			let existing = parent.children.filter(child => child.packageName === packageName);
 			if (existing.length > 0) {
 				existing[0].size += mod.size;
 				parent = existing[0];
 			} else {
 				let newChild: StatsNode = {
-					packageName: package,
+					packageName: packageName,
 					size: mod.size,
 					children: []
 				};
